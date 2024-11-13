@@ -2,7 +2,7 @@ import vertexShaderCode from "./vert.vert?raw";
 import fragmentShaderCode from "./frag.frag?raw";
 import { indices, vertices } from "./cube";
 
-// Time since program started
+// Time since program started in seconds
 const START_TIME = Date.now() * 1e-3;
 
 const canvas = document.querySelector("canvas")!;
@@ -10,8 +10,8 @@ const canvas = document.querySelector("canvas")!;
 const gl = canvas.getContext("webgl2")!;
 
 // OpenGL setting
-gl.enable(gl.DEPTH_TEST);
-gl.depthFunc(gl.LEQUAL);
+// gl.enable(gl.DEPTH_TEST);
+// gl.depthFunc(gl.LEQUAL);
 // gl.enable(gl.CULL_FACE);
 // gl.cullFace(gl.FRONT_FACE);
 
@@ -41,7 +41,7 @@ gl.linkProgram(program);
 if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
   throw new Error(gl.getProgramInfoLog(program)!);
 }
-// Create uniforms, and point back to object
+// Create uniforms, and point back to the shader program object
 program.resolution = gl.getUniformLocation(program, "u_resolution")!;
 program.time = gl.getUniformLocation(program, "u_time")!;
 
@@ -50,10 +50,13 @@ const vertexBuffer = gl.createBuffer()!;
 gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
 gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
 
+const vao = gl.createVertexArray()!;
+gl.bindVertexArray(vao);
+
 // Create attribute position
 const position = gl.getAttribLocation(program, "position");
-gl.enableVertexAttribArray(position);
 gl.vertexAttribPointer(position, 3, gl.FLOAT, false, 0, 0);
+gl.enableVertexAttribArray(position);
 
 // Create EBO
 const elementBuffer = gl.createBuffer()!;
@@ -64,7 +67,7 @@ gl.bufferData(
   gl.STREAM_DRAW
 );
 
-const setup = () => {};
+gl.bindVertexArray(null);
 
 // ===========================
 
@@ -75,32 +78,26 @@ const render = () => {
   // load program
   gl.useProgram(program);
   // bind vertex buffer
-  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+  // gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+  // gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer);
+  gl.bindVertexArray(vao);
   // provide uniform data
   gl.uniform2f(program.resolution, canvas.width, canvas.height);
   gl.uniform1f(program.time, Date.now() * 1e-3 - START_TIME);
-  // draw
-  // gl.drawArrays(
-  //   gl.TRIANGLES,
-  //   0, //
-  //   vertices.length * 0.5
-  // );
-  gl.drawElements(gl.LINE_LOOP, indices.length, gl.UNSIGNED_SHORT, 0);
+  // Draw
+  gl.drawElements(gl.LINE_STRIP, indices.length, gl.UNSIGNED_SHORT, 0);
+  // Reset
+  gl.bindVertexArray(null);
 };
 const loop = () => {
   render();
   const handle = requestAnimationFrame(loop);
-  // return handle
 };
 
 window.addEventListener("resize", () => {
   gl.viewport(0, 0, canvas.width, canvas.height);
   gl.uniform2f(program.resolution, canvas.width, canvas.height);
-  gl.drawArrays(
-    gl.TRIANGLES,
-    0, //
-    vertices.length
-  );
+  gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
 });
 
 loop();

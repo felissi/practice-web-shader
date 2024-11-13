@@ -12,9 +12,7 @@ uniform vec2 u_resolution;
 uniform float u_time;
 uniform float fade;
 
-  #define S smoothstep
-
-  #define TAU 6.2831853
+#define TAU 6.2831853
 
 float rnd(vec2 p) {
   return fract(sin(dot(p, p.yx + vec2(1234, 2345))) * 345678.);
@@ -26,7 +24,7 @@ vec3 grid(vec2 uv) {
   float n = 1.2;
   vec2 g = abs(mod(uv, n) - .5 * n);
 
-  col = mix(vec3(1), vec3(0), S(.08, .0, min(g.x, g.y)));
+  col = mix(vec3(1), vec3(0), smoothstep(.08, .0, min(g.x, g.y)));
   col = min(col, mix(vec3(1), vec3(0), .125));
 
   return col;
@@ -45,11 +43,10 @@ void main(void) {
 
   d = max(.0, d * mix(.75, 1., rnd(uv)));
 
-  col *= mix(d, 1., 1. - min(1., S(.7, .8, u_time * .4)));
+  col *= mix(d, 1., 1. - min(1., smoothstep(.7, .8, u_time * .4)));
 
   col = mix(col, vec3(.01, .05, .052), .75);
-  // col = mix(col, vec3(1), S(.9f, 1.f, fade * fade));
-  col = mix(col, vec3(0), 1. - min(1., S(.5, .8, u_time * .4)));
+  col = mix(col, vec3(0), 1. - min(1., smoothstep(.5, .8, u_time * .4)));
 
   gl_FragColor = vec4(col, 1);
 }
