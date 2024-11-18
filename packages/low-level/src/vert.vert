@@ -1,6 +1,8 @@
 #version 300 es
 
+#ifdef GL_ES
 precision mediump float;
+#endif
 
 in vec3 position;
 uniform float u_time;
@@ -31,5 +33,5 @@ void main(void) {
   // Rotate along y-axis
   // Create the rotation matrix
   mat4 rotationMatrix = rotateX(angleX) * rotateY(angleY) * rotateZ(angleZ);
-  gl_Position = rotationMatrix * vec4(position, 1);
+  gl_Position = rotationMatrix * vec4(position, 1.0f);
 }

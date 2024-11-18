@@ -85,7 +85,7 @@ const render = () => {
   gl.uniform2f(program.resolution, canvas.width, canvas.height);
   gl.uniform1f(program.time, Date.now() * 1e-3 - START_TIME);
   // Draw
-  gl.drawElements(gl.LINE_STRIP, indices.length, gl.UNSIGNED_SHORT, 0);
+  gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
   // Reset
   gl.bindVertexArray(null);
 };
@@ -97,7 +97,6 @@ const loop = () => {
 window.addEventListener("resize", () => {
   gl.viewport(0, 0, canvas.width, canvas.height);
   gl.uniform2f(program.resolution, canvas.width, canvas.height);
-  gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
 });
 
 loop();
