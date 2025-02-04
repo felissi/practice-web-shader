@@ -1,75 +1,81 @@
 import {
-  Mesh,
-  PlaneGeometry,
-  Group,
-  Vector3,
-  MathUtils,
-  Plane,
-  Texture,
-  Camera,
-  PerspectiveCamera,
-  WebGLRenderer,
-  OrthographicCamera,
-  Scene,
-  TextureLoader,
-  Vector4,
-  Vector2,
-  Raycaster,
+  DepthOfFieldEffect,
+  EffectComposer,
+  EffectPass,
+  MaskFunction,
+  RenderPass,
+  VignetteEffect,
+} from "postprocessing";
+import {
   Clock,
   Color,
+  Group,
+  MathUtils,
+  Mesh,
+  OrthographicCamera,
+  PlaneGeometry,
+  Scene,
+  SRGBColorSpace,
+  TextureLoader,
+  Vector2,
+  Vector3,
+  WebGLRenderer,
 } from "three";
-import {
-  MaskFunction,
-  EffectComposer,
-  DepthOfFieldEffect,
-  VignetteEffect,
-  VignetteTechnique,
-} from "postprocessing";
-import "./style.css";
-import bgUrl from "./assets/bg.jpg";
-import starsUrl from "./assets/stars.png";
-import groundUrl from "./assets/ground.png";
+
 import bearUrl from "./assets/bear.png";
+import bgUrl from "./assets/bg.jpg";
+import groundUrl from "./assets/ground.png";
 import leaves1Url from "./assets/leaves1.png";
 import leaves2Url from "./assets/leaves2.png";
+import starsUrl from "./assets/stars.png";
 import { LayerMaterial } from "./layerMaterial";
+import "./style.css";
 
 const canvas = document.querySelector("#scene")! as HTMLCanvasElement;
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
 
 const clock = new Clock();
 const scene = new Scene();
-const camera = new OrthographicCamera(-1, 1, 1, -1, 50, 300);
-console.log(`🚀 // DEBUG 🍔  ~ file: main.ts:44 ~ `, camera);
 
-// camera.zoom = 5;
-camera.position.set(0, 0, 200);
-// ####################
-const renderer = new WebGLRenderer({ canvas, antialias: false });
+const renderer = new WebGLRenderer({ canvas, antialias: false, stencil: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setClearColor(new Color(0, 0, 0));
+renderer.setPixelRatio(2);
+renderer.setClearColor(new Color(0, 0, 0), 0);
 const usePointer = () => {
   const _ = { x: 0, y: 0 };
-  canvas.addEventListener(
+  const _buffer = new Vector2();
+  window.addEventListener(
     "mousemove",
     (event) => {
-      _.x = (event.clientX / canvas.width) * 2 - 1;
-      _.y = -(event.clientY / canvas.height) * 2 + 1;
+      _.x = (event.clientX / renderer.getSize(_buffer).width) * 2 - 1;
+      _.y = -(event.clientY / renderer.getSize(_buffer).height) * 2 + 1;
     },
     { passive: true }
   );
   return _;
 };
+// ####################
+const camera = new OrthographicCamera(
+  -window.innerWidth / 2,
+  window.innerWidth / 2,
+  window.innerHeight / 2,
+  -window.innerHeight / 2,
+  50,
+  300
+);
+camera.zoom = 5;
+camera.position.set(0, 0, 200);
+camera.updateProjectionMatrix();
+// ####################
 const pointer = usePointer();
-const raycaster = new Raycaster();
 
 const getAspect = (
   width: number,
   height: number,
-  factor: number = 1
+  factor: number = 1,
+  /** camera zoom */
+  zoom = 1
 ): [number, number, number] => {
-  const v = renderer.getViewport(new Vector4());
+  const v = new Vector2(window.innerWidth, window.innerHeight);
   const adaptedHeight =
     height *
     /** aspect */ (v.width / v.height > width / height
@@ -81,7 +87,7 @@ const getAspect = (
     /** aspect */ (v.width / v.height > width / height
       ? v.width / width
       : v.height / height);
-  return [(adaptedWidth * factor) / 5, (adaptedHeight * factor) / 5, 1];
+  return [(adaptedWidth * factor) / zoom, (adaptedHeight * factor) / zoom, 1];
 };
 
 const movement = new Vector3();
@@ -95,10 +101,10 @@ const textures = [
   leaves1Url,
   leaves2Url,
 ].map((_) => new TextureLoader().load(_));
+textures.forEach((_) => (_.colorSpace = SRGBColorSpace));
 
-const scaleN = getAspect(1600, 1000, 1.05);
-const scaleW = getAspect(2200, 1000, 1.05);
-console.log(`🚀 // DEBUG 🍔  ~ file: main.ts:99 ~ `, scaleN, scaleW);
+const scaleN = () => getAspect(1600, 1000, 1.05, camera.zoom);
+const scaleW = () => getAspect(2200, 1000, 1.05, camera.zoom);
 
 const layers = [
   { texture: textures[0], x: 0, y: 0, z: 0, factor: 0.005, scale: scaleW },
@@ -124,25 +130,24 @@ const layers = [
   },
   {
     texture: textures[5],
-    x: -0,
-    y: -0,
+    x: -20,
+    y: -20,
     z: 49,
     factor: 0.04,
     scaleFactor: 1.3,
     wiggle: 1,
-    scale: scaleN,
+    scale: scaleW,
   },
 ];
 const meshes = layers.map(
   ({ scale, texture, factor = 0, scaleFactor = 1, wiggle = 0, x, y, z }, i) => {
     const geometry = new PlaneGeometry(
-      ...[2, 2, wiggle ? 10 : 1, wiggle ? 10 : 1]
+      ...[1, 1, wiggle ? 10 : 1, wiggle ? 10 : 1]
     );
     const material = LayerMaterial();
     const mesh = new Mesh(geometry, material);
     mesh.position.set(x, y, z);
-    // mesh.scale.set(1.05, 1.05, 1.05);
-    // mesh.scale.set(...scale);
+    mesh.scale.set(...scale());
     mesh.material.uniforms.wiggle.value = wiggle;
     mesh.material.uniforms.factor.value = factor;
     mesh.material.uniforms.scale.value = scaleFactor;
@@ -158,47 +163,63 @@ scene.add(group);
 
 window.addEventListener("resize", () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
-  // // const aspect = window.innerWidth / window.innerHeight;
-  // camera.left = -window.innerWidth / 2;
-  // camera.right = window.innerWidth / 2;
-  // camera.top = window.innerHeight / 2;
-  // camera.bottom = -window.innerHeight / 2;
-  // camera.updateProjectionMatrix();
-  // renderer.render(scene, camera);
-});
-const draw = () => {
-  const scaleN = getAspect(1600, 1000, 1.05);
-  const scaleW = getAspect(2200, 1000, 1.05);
 
+  camera.left = -window.innerWidth / 2;
+  camera.right = window.innerWidth / 2;
+  camera.top = window.innerHeight / 2;
+  camera.bottom = -window.innerHeight / 2;
+  camera.updateProjectionMatrix();
+});
+
+const composer = new EffectComposer(renderer, { multisampling: 0 });
+
+composer.addPass(new RenderPass(scene, camera));
+const depthOfField = new DepthOfFieldEffect(camera, {
+  bokehScale: 8,
+  focalLength: 0.1,
+  width: 1024,
+});
+depthOfField.maskFunction = MaskFunction.MULTIPLY_RGB_SET_ALPHA;
+depthOfField.target = new Vector3(0, 0, 30);
+composer.addPass(new EffectPass(camera));
+composer.addPass(new EffectPass(camera, depthOfField));
+composer.addPass(new EffectPass(camera, new VignetteEffect()));
+
+/** frame delta based on designed fps (60fps or 16ms) */
+const BASE_DELTA = 1 / 60;
+const draw = () => {
   const delta = clock.getDelta();
-  movement.lerp(temp.set(pointer.x, pointer.y * 0.2 * delta, 0), 0.2);
+
+  const lerpDeltaCorrect = (x: number, delta: number) =>
+    1 - Math.pow(1 - x * 3.0, delta / BASE_DELTA);
+
+  movement.lerp(
+    temp.set(pointer.x, pointer.y, 0),
+    lerpDeltaCorrect(0.2, delta)
+  );
   group.position.x = MathUtils.lerp(
     group.position.x,
-    pointer.x * 20 * delta,
-    0.05
+    pointer.x * 20,
+    lerpDeltaCorrect(0.05, delta)
   );
   group.rotation.x = MathUtils.lerp(
     group.rotation.x,
-    (pointer.y / 20) * delta,
-    0.05
+    pointer.y / 20,
+    lerpDeltaCorrect(0.05, delta)
   );
   group.rotation.y = MathUtils.lerp(
     group.rotation.y,
-    (-pointer.x / 2) * delta,
-    0.05
+    -pointer.x / 2,
+    lerpDeltaCorrect(0.05, delta)
   );
-  meshes.slice(-2, undefined).forEach((mesh) => {
-    mesh.material.uniforms.time.value += delta;
 
+  meshes.forEach((mesh, i) => {
+    mesh.material.uniforms.time.value += delta;
     mesh.material.uniforms.movement.value = movement;
-    // mesh.material.uniforms.resolution.value = new Vector2(
-    //     renderer.getSize(new Vector2()).width,
-    //     renderer.getSize(new Vector2()).height
-    //   );
+    mesh.scale.set(...layers[i].scale());
   });
 
-  raycaster.setFromCamera(new Vector2(pointer.x, pointer.y), camera);
-  renderer.render(scene, camera);
+  composer.render(delta);
   requestAnimationFrame(draw);
 };
 draw();

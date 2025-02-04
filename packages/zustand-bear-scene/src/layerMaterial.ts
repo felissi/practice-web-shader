@@ -31,7 +31,7 @@ export const LayerMaterial = () =>
       vec2 uv = vUv / scale + movement.xy * factor;
       vec4 color = texture2D(textr, uv);
       if (color.a < 0.1) discard;
-      gl_FragColor = vec4(color.rgb, 1.);
+      gl_FragColor = vec4(color.rgb, .1);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
     }`,
