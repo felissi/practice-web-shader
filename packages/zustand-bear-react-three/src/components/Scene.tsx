@@ -1,4 +1,4 @@
-import { Mesh, PlaneGeometry, Group, Vector3, MathUtils } from "three";
+import { Mesh, PlaneGeometry, Group, Vector3, MathUtils, Color } from "three";
 import { memo, useRef, useState, useLayoutEffect } from "react";
 import { createRoot, events, extend, useFrame } from "@react-three/fiber";
 import { Plane, useAspect, useTexture } from "@react-three/drei";
@@ -7,7 +7,7 @@ import {
   DepthOfField,
   Vignette,
 } from "@react-three/postprocessing";
-import { MaskFunction } from "postprocessing";
+import { DepthOfFieldEffect, MaskFunction } from "postprocessing";
 // import Fireflies from './Fireflies'
 import bgUrl from "../assets/bg.jpg";
 import starsUrl from "../assets/stars.png";
@@ -20,7 +20,6 @@ import "./layerMaterial";
 function Experience() {
   const scaleN = useAspect(1600, 1000, 1.05);
   const scaleW = useAspect(2200, 1000, 1.05);
-  console.log(`🚀 // DEBUG 🍔  ~ file: Scene.tsx:23 ~ `, scaleN, scaleW);
 
   const textures = useTexture([
     bgUrl,
@@ -134,14 +133,15 @@ function Experience() {
 }
 
 function Effects() {
-  const ref = useRef();
+  const ref = useRef<DepthOfFieldEffect>();
   useLayoutEffect(() => {
-    const maskMaterial = ref.current.maskPass.getFullscreenMaterial();
+    const maskMaterial = ref.current!.maskPass.getFullscreenMaterial();
     maskMaterial.maskFunction = MaskFunction.MULTIPLY_RGB_SET_ALPHA;
+    // ref.current!.maskFunction = MaskFunction.MULTIPLY_RGB_SET_ALPHA;
   });
   return (
     <EffectComposer
-      disableNormalPass
+      enableNormalPass={false}
       multisampling={0}
     >
       <DepthOfField
@@ -167,11 +167,11 @@ export function Scene() {
 
 function Canvas({ children }: { children: React.ReactNode }) {
   extend({ Mesh, PlaneGeometry, Group });
-  const canvas = useRef(null);
+  const canvas = useRef(null as unknown as HTMLCanvasElement);
   const root = useRef(null);
   useLayoutEffect(() => {
     if (!root.current) {
-      root.current = createRoot(canvas.current).configure({
+      root.current = createRoot(canvas.current!).configure({
         events,
         orthographic: true,
         gl: { antialias: false },
@@ -184,14 +184,7 @@ function Canvas({ children }: { children: React.ReactNode }) {
                 (event.clientX / state.size.width) * 2 - 1,
                 -(event.clientY / state.size.height) * 2 + 1
               );
-              console.log(
-                `🚀 // DEBUG 🍔  ~ file: Scene.tsx:185 ~ `,
-                (event.clientX / state.size.width) * 2 - 1,
-                -(event.clientY / state.size.height) * 2 + 1,
-                state.camera
-              );
-
-              state.raycaster.setFromCamera(state.pointer, state.camera);
+              // state.raycaster.setFromCamera(state.pointer, state.camera);
             },
           });
         },
