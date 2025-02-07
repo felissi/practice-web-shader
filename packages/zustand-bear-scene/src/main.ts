@@ -185,13 +185,10 @@ composer.addPass(new EffectPass(camera));
 composer.addPass(new EffectPass(camera, depthOfField));
 composer.addPass(new EffectPass(camera, new VignetteEffect()));
 
-/** frame delta based on designed fps (60fps or 16ms) */
-const BASE_DELTA = 1 / 60;
 const draw = () => {
   const delta = clock.getDelta();
 
-  const lerpDeltaCorrect = (x: number, delta: number) =>
-    1 - Math.pow(1 - x * 3.0, delta / BASE_DELTA);
+  const lerpDeltaCorrect = (x: number, delta: number) => 1 - x ** delta;
 
   movement.lerp(
     temp.set(pointer.x, pointer.y, 0),
