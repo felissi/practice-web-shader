@@ -1,5 +1,12 @@
-import { EffectComposer } from "@react-three/postprocessing";
+import { EffectComposer, Noise } from "@react-three/postprocessing";
+
+import { WaterEffect } from "./WaterEffect";
 
 export function Effect() {
-  return <EffectComposer></EffectComposer>;
+  return (
+    <EffectComposer>
+      <WaterEffect />
+      <Noise premultiply />
+    </EffectComposer>
+  );
 }

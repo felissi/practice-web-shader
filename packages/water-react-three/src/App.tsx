@@ -3,6 +3,7 @@ import { A11yAnnouncer } from "@react-three/a11y";
 
 import "./App.css";
 import { Hero } from "./Hero";
+import { Effect } from "./Effect";
 
 function App() {
   return (
@@ -19,7 +20,9 @@ function App() {
           attach="background"
           args={["#f0f0f0"]}
         />
+        <ambientLight intensity={0.5} />
         <Hero />
+        <Effect />
       </Canvas>
       <A11yAnnouncer />
     </>

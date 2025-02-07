@@ -1,5 +1,5 @@
 import { Flex, Box } from "@react-three/flex";
-import { Plane } from "./assets/Plane";
+import { Plane } from "./Plane";
 
 import image1 from "./assets/image-1.jpg?url";
 import image2 from "./assets/image-2.jpg?url";
@@ -38,7 +38,7 @@ export function BeegText(props: JSX.IntrinsicElements["mesh"]) {
   return (
     <Text
       fontSize={20}
-      color={0xffffff}
+      color={0xe0e0e0}
     >
       WORD
     </Text>
